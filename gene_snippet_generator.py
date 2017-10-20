@@ -31,7 +31,14 @@ def generate_strings(args, alphabet=['A', 'B', 'C', 'D'], str_len=40, default_mu
             strings.append(''.join(random.choice(alphabet) for _ in range(str_len)))
         else:
             # Create a mutated string based on the last string according to mutation_rate and from_ends
-            strings.append(''.join(random.choice(alphabet) if random.random() <= args.mutation_rate else c for c in strings[i - 1]))
+            strings.append(
+                ''.join(
+                    random.choice(alphabet)
+                    if random.random() <= (args.mutation_rate if j < args.from_ends or j >= len(strings[i - 1]) - args.from_ends else default_mutation)
+                    else c
+                    for j, c in enumerate(strings[i - 1])
+                )
+            )
 
         print(strings[i])
 
@@ -39,10 +46,20 @@ def generate_strings(args, alphabet=['A', 'B', 'C', 'D'], str_len=40, default_mu
         # Write to file
         with open(args.output_file, 'w') as f:
             for str in strings:
-                f.write(str + '\n')
+                f.write(str + '\n') # Needs labels
 
 
 # TODO Label data w/ stickiness
+
+def get_stickiness(dna_str):
+    '''
+    Determines the stickiness of a string and returns its label
+
+    :param dna_str: The string to process
+    :return: A label indicating the string's stickiness
+    '''
+
+    raise NotImplementedError
 
 """CLARGS"""
 parser = argparse.ArgumentParser(

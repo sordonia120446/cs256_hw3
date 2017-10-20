@@ -51,15 +51,33 @@ def generate_strings(args, alphabet=['A', 'B', 'C', 'D'], str_len=40, default_mu
 
 # TODO Label data w/ stickiness
 
-def get_stickiness(dna_str):
+def get_stickiness(dna_str, sticks_to = {'A': 'C', 'B': 'D', 'C': 'A', 'D': 'B'}):
     '''
     Determines the stickiness of a string and returns its label
 
     :param dna_str: The string to process
+    :param sticks_to: A dictionary describing which letters stick to which
     :return: A label indicating the string's stickiness
     '''
 
-    raise NotImplementedError
+    stick = 0
+    for i in range(len(dna_str) // 2):
+        try:
+            if sticks_to[dna_str[i]] == dna_str[len(dna_str) - 1 - i]:
+                stick = i + 1
+        except KeyError:
+            raise Exception('Invalid string')
+
+    if stick == 0:
+        return 'NONSTICK'
+    elif stick == len(dna_str) // 2:
+        return 'STICK_PALINDROME'
+    else:
+        if len(dna_str) % 2 == 0:
+            return f'{stick}-STICKY'
+        else:
+            return f'{stick}+1-STICKY'
+
 
 """CLARGS"""
 parser = argparse.ArgumentParser(
@@ -100,3 +118,4 @@ parser.add_argument(
 if __name__ == '__main__':
     args = parser.parse_args()
     generate_strings(args)
+    print(get_stickiness('ABCADC')) # test

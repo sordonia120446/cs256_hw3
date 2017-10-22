@@ -5,6 +5,8 @@ Training in tensorflow.
 """
 
 import argparse
+import glob
+import os
 
 import numpy as np
 import tensorflow as tf
@@ -13,9 +15,49 @@ import tensorflow as tf
 tf.logging.set_verbosity(tf.logging.INFO)
 
 
-def dnn_model_fn(features, labels, mode):
+def convert_data(input_line):
+    """
+    Converts the data from raw DNA to ASCII char numpy array.
 
-    # Load training data
+    :param input_line: line of input data (DNA & label)
+    :returns type <numpy arr>: tf-friendly input vector
+    """
+    
+    try:
+        data, label = input_line.split(",")
+    except ValueError:
+        raise Exception('Check the input file format')
+
+    data.strip()  # remove whitespace
+    label.strip()  # remove whitespace
+
+    # Convert letters into ASCII
+    data = [ord(c) for c in data]
+
+    return np.array(data), label
+
+
+def load_data(data_folder):
+    
+    data_files = os.path.join(data_folder, '*.txt')
+    data = []
+    for f_path in glob.glob(data_files):
+
+        with open(f_path) as f_in:
+            for line in f_in.read().splitlines():
+                dna_arr, label = convert_data(line)
+                print(f'dna arr: {dna_arr}')
+                print(f'label: {label}')
+
+                data.append({
+                    'x': dna_arr,
+                    'y': label
+                })
+
+    return data
+
+
+def dnn_model_fn(features, labels, mode):
 
     # Shape input layer
     l0 = None
@@ -69,6 +111,9 @@ def dnn_model_fn(features, labels, mode):
 
 def main(args):
 
+    # Load training data
+    data = load_data(args.data_folder)
+
     # Init estimator
     sticky_classifier = tf.estimator.Estimator(
         model_fn=dnn_model_fn,
@@ -112,6 +157,5 @@ parser.add_argument(
 
 if __name__ == '__main__':
     args = parser.parse_args()
-
     main(args)
 

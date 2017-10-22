@@ -38,6 +38,13 @@ def convert_data(input_line):
 
 
 def load_data(data_folder):
+    """
+    Iterate through each file in data_folder and construct
+    the input data features (40-len DNA).
+
+    :param data_folder: path to folder of data
+    :returns type list: list of dicts for DNA-arr & label
+    """
     
     data_files = os.path.join(data_folder, '*.txt')
     data = []
@@ -46,9 +53,6 @@ def load_data(data_folder):
         with open(f_path) as f_in:
             for line in f_in.read().splitlines():
                 dna_arr, label = convert_data(line)
-                print(f'dna arr: {dna_arr}')
-                print(f'label: {label}')
-
                 data.append({
                     'x': dna_arr,
                     'y': label
@@ -58,9 +62,17 @@ def load_data(data_folder):
 
 
 def dnn_model_fn(features, labels, mode):
+    """
+    Multi-layer DNN with dense hidden layers & relu activation.
+
+    :param features: the features to train/test on
+    :param labels: the labels on each DNA to check against prediction
+    :param mode: can be train, 5fold, or test
+    :returns type tf: tf goodness
+    """
 
     # Shape input layer
-    l0 = None
+    l0 = tf.reshape(features, [-1, 40])
 
     # Define hidden layers
     l1 = tf.layers.dense(inputs=l0, units=40, activation=tf.nn.relu)
@@ -128,7 +140,13 @@ def main(args):
     )
 
     # TODO Train model
-
+    features = [d['x'] for d in data]
+    labels = [d['y'] for d in data]
+    dnn_model_fn(
+        features=features,
+        labels=labels,
+        mode=args.mode
+    )
     # TODO Eval model
 
 

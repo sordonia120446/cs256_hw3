@@ -1,5 +1,12 @@
 """
 Training in tensorflow.
+Build a classifier for "alien DNA."  They have six possible labels:
+    NONSTICK
+    12-STICKY
+    34-STICKY
+    56-STICKY
+    78-STICKY
+    STICK_PALINDROME 
 
 :authors Jason, Nick, Sam
 """
@@ -34,7 +41,7 @@ def convert_data(input_line):
     # Convert letters into ASCII
     data = [ord(c) for c in data]
 
-    return np.array(data), label
+    return np.array(data, dtype=float), label
 
 
 def load_data(data_folder):
@@ -81,7 +88,7 @@ def dnn_model_fn(features, labels, mode):
     l4 = tf.layers.dense(inputs=l3, units=40, activation=tf.nn.relu)
 
     # Define output (logit) layer
-    logits = tf.layers.dense(inputs=l4, units=10)
+    logits = tf.layers.dense(inputs=l4, units=6)
 
     predictions = {
         "classes": tf.argmax(input=logits, axis=1),
@@ -92,7 +99,7 @@ def dnn_model_fn(features, labels, mode):
         return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
 
     # Calculate Loss (for both TRAIN and EVAL modes)
-    onehot_labels = tf.one_hot(indices=tf.cast(labels, tf.int32), depth=10)
+    onehot_labels = tf.one_hot(indices=tf.cast(labels, tf.int32), depth=6)
     loss = tf.losses.softmax_cross_entropy(
         onehot_labels=onehot_labels,
         logits=logits
@@ -148,6 +155,9 @@ def main(args):
         mode=args.mode
     )
     # TODO Eval model
+
+    print('Processing complete!')
+    print('Total items trained on: {len(data)}')
 
 
 """CLARGS"""

@@ -21,6 +21,15 @@ import tensorflow as tf
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
+label_map = {
+    'NONSTICK': 1,
+    '12-STICKY': 2,
+    '34-STICKY': 3,
+    '56-STICKY': 4,
+    '78-STICKY': 5,
+    'STICK_PALINDROME': 6
+}
+
 
 def convert_data(input_line):
     """
@@ -40,6 +49,12 @@ def convert_data(input_line):
 
     # Convert letters into ASCII
     data = [ord(c) for c in data]
+
+    # Map labels to ints
+    try:
+        label = label_map[label]
+    except KeyError:
+        raise Exception(f'Check spelling on label {label}')
 
     return np.array(data, dtype=np.int32), label
 
@@ -79,7 +94,7 @@ def dnn_model_fn(features, labels, mode):
     """
 
     # Shape input layer
-    l0 = tf.reshape(features, [-1, 40])
+    l0 = tf.reshape(features['x'], [-1, 40])
 
     # Define hidden layers
     l1 = tf.layers.dense(inputs=l0, units=40, activation=tf.nn.relu)
@@ -143,16 +158,25 @@ def main(args):
     # Log the values in the "Softmax" tensor with label "probabilities"
     tensors_to_log = {"probabilities": "softmax_tensor"}
     logging_hook = tf.train.LoggingTensorHook(
-        tensors=tensors_to_log, every_n_iter=1000
+        tensors=tensors_to_log,
+        every_n_iter=1000
     )
 
     # TODO Train model
     features = [d['x'] for d in data]
-    labels = [d['y'] for d in data]
-    dnn_model_fn(
-        features=features,
-        labels=labels,
-        mode=args.mode
+    labels = np.asarray([d['y'] for d in data], dtype=np.int32)
+
+    train_input_fn = tf.estimator.inputs.numpy_input_fn(
+        x={'x': features},
+        y=labels,
+        batch_size=100,
+        num_epochs=None,
+        shuffle=True
+    )
+    sticky_classifier.train(
+        input_fn=train_input_fn,
+        steps=20000,
+        hooks=[logging_hook]
     )
     # TODO Eval model
 

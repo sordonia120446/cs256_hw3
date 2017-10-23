@@ -56,7 +56,7 @@ def convert_data(input_line):
     except KeyError:
         raise Exception(f'Check spelling on label {label}')
 
-    return np.array(data, dtype=np.int32), label
+    return np.array(data, dtype=np.float32), label
 
 
 def load_data(data_folder):
@@ -149,9 +149,10 @@ def main(args):
     data = load_data(args.data_folder)
 
     # Init estimator
+    model_dir = os.path.join('model')
     sticky_classifier = tf.estimator.Estimator(
         model_fn=dnn_model_fn,
-        model_dir=args.model_file
+        model_dir=model_dir
     )
 
     # Set up logging for predictions
@@ -163,8 +164,8 @@ def main(args):
     )
 
     # TODO Train model
-    features = [d['x'] for d in data]
-    labels = np.asarray([d['y'] for d in data], dtype=np.int32)
+    features = np.asarray([d['x'] for d in data])
+    labels = np.asarray([d['y'] for d in data], dtype=np.float32)
 
     train_input_fn = tf.estimator.inputs.numpy_input_fn(
         x={'x': features},

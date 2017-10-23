@@ -41,7 +41,7 @@ def convert_data(input_line):
     # Convert letters into ASCII
     data = [ord(c) for c in data]
 
-    return np.array(data, dtype=float), label
+    return np.array(data, dtype=np.int32), label
 
 
 def load_data(data_folder):

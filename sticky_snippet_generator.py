@@ -5,6 +5,7 @@ Gene Snippet Detection with Tensorflow
 """
 
 import argparse
+import os
 import random
 
 def generate_strings(args, str_len=40):
@@ -35,7 +36,8 @@ def generate_strings(args, str_len=40):
 
     if strings:
         # Write to file
-        with open(args.output_file, 'w') as f:
+        f_out_path = os.path.join('data', args.output_file)
+        with open(f_out_path, 'w') as f:
             for str in strings:
                 f.write(str + ',' + get_stickiness(str) + '\n') # Needs labels
 

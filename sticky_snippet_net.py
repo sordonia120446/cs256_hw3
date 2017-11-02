@@ -182,7 +182,7 @@ def main(args):
     # TODO Eval model
 
     print('Processing complete!')
-    print('Total items trained on: {len(data)}')
+    print(f'Total items trained on: {len(data)}')
 
 
 """CLARGS"""

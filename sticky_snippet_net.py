@@ -60,19 +60,20 @@ def convert_data(input_line):
     return np.array(data, dtype=np.float32), label
 
 
-def load_data(data_folder):
+def load_data(data_folder, exclude=None):
     """
     Iterate through each file in data_folder and construct
     the input data features (40-len DNA).
 
     :param data_folder: path to folder of data
+    :param exclude: kth file to exclude in cross-validation
     :returns type list: list of dicts for DNA-arr & label
     """
     
     data_files = os.path.join(data_folder, '*.txt')
     data = []
     for f_path in glob.glob(data_files):
-
+        # TO DO EXCLUDE K
         with open(f_path) as f_in:
             for line in f_in.read().splitlines():
                 dna_arr, label = convert_data(line)
@@ -144,16 +145,7 @@ def dnn_model_fn(features, labels, mode):
     )
 
 
-def k_fold_cross_validate(data, k=5):
-    for subset in range(k):
-        pass
-
-
-def main(args):
-
-    # Load training data
-    data = load_data(args.data_folder)
-
+def train_mode(data):
     # Init estimator
     model_dir = os.path.join('model')
     sticky_classifier = tf.estimator.Estimator(
@@ -197,6 +189,27 @@ def main(args):
 
     print('Processing complete!')
     print(f'Total items trained on: {len(data)}')
+
+
+def k_fold_mode(args, k=5):
+    for subset in range(k):
+        data = load_data(args.data_folder, k)
+        # trains on excluding k
+        train_mode(data, k)
+        # test on k
+        pass
+
+
+def main(args):
+    # call function based on mode
+    if args.mode == 'train':
+        # Load training data
+        data = load_data(args.data_folder)
+        train_mode(data)
+    elif args.mode == '5fold':
+        k_fold_mode(args)
+    elif args.mode == 'train':
+        pass
 
 
 """CLARGS"""

@@ -83,6 +83,29 @@ def load_data(data_folder):
 
     return data
 
+def get_confusion_matrix(labels, predictions):
+    '''
+    Generate a confusion matrix for evaluation.
+
+    Note for rows, columns 0...5 0=NONSTICK, 1=12-STICKY...up to 5=STICK_PALINDROME
+
+    :param labels: A tensor containing actual labels for each example
+    :param predictions: A tensor containing the label predicted by the model
+    :return: Tuple containing matrix and update op for use in eval_metric_ops
+    '''
+    with tf.variable_scope('get_confusion_matrix'):
+        matrix = tf.confusion_matrix(labels=labels, predictions=predictions, num_classes=6)
+        matrix_sum = tf.Variable(tf.zeros(shape=(6,6), dtype=tf.int32),
+                                 trainable=False,
+                                 name='confusion_matrix',
+                                 collections=[tf.GraphKeys.LOCAL_VARIABLES])
+
+        # Update matrix_sum by adding matrix to it
+        update = tf.assign_add(matrix_sum, matrix)
+
+        # Return confusion matrix and update op
+        return tf.convert_to_tensor(matrix_sum), update
+
 
 def dnn_model_fn(features, labels, mode):
     """
@@ -134,7 +157,8 @@ def dnn_model_fn(features, labels, mode):
         "accuracy": tf.metrics.accuracy(
             labels=labels,
             predictions=predictions["classes"]
-        )
+        ),
+        "confusion_matrix": get_confusion_matrix(labels, predictions["classes"])
     }
 
     return tf.estimator.EstimatorSpec(

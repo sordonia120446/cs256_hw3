@@ -30,6 +30,7 @@ label_map = {
     'STICK_PALINDROME': 6
 }
 
+MINIBATCH_SIZE = 100
 
 def convert_data(input_line):
     """
@@ -170,7 +171,7 @@ def main(args):
     train_input_fn = tf.estimator.inputs.numpy_input_fn(
         x={'x': features},
         y=labels,
-        batch_size=100,
+        batch_size=MINIBATCH_SIZE,
         num_epochs=None,
         shuffle=True
     )

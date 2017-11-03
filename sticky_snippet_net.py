@@ -144,6 +144,11 @@ def dnn_model_fn(features, labels, mode):
     )
 
 
+def k_fold_cross_validate(data, k=5):
+    for subset in range(k):
+        pass
+
+
 def main(args):
 
     # Load training data

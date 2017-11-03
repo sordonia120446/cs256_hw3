@@ -14,6 +14,7 @@ Build a classifier for "alien DNA."  They have six possible labels:
 import argparse
 import glob
 import os
+import time
 
 import numpy as np
 import tensorflow as tf
@@ -22,12 +23,12 @@ import tensorflow as tf
 tf.logging.set_verbosity(tf.logging.INFO)
 
 label_map = {
-    'NONSTICK': 1,
-    '12-STICKY': 2,
-    '34-STICKY': 3,
-    '56-STICKY': 4,
-    '78-STICKY': 5,
-    'STICK_PALINDROME': 6
+    'NONSTICK': 0,
+    '12-STICKY': 1,
+    '34-STICKY': 2,
+    '56-STICKY': 3,
+    '78-STICKY': 4,
+    'STICK_PALINDROME': 5
 }
 
 MINIBATCH_SIZE = 100
@@ -188,6 +189,8 @@ def main(args):
         every_n_iter=1000
     )
 
+    train_start = time.perf_counter()
+
     features = np.asarray([d['x'] for d in data])
     labels = np.asarray([d['y'] for d in data], dtype=np.float32)
 
@@ -204,6 +207,9 @@ def main(args):
         hooks=[logging_hook]
     )
 
+    train_time = time.perf_counter() - train_start
+    test_start = time.perf_counter()
+
     # TODO Eval model
     eval_input_fn = tf.estimator.inputs.numpy_input_fn(
         x={"x": features},
@@ -212,7 +218,12 @@ def main(args):
         shuffle=False
     )
     eval_results = sticky_classifier.evaluate(input_fn=eval_input_fn)
+
+    test_time = time.perf_counter() - test_start
     print(eval_results)
+
+    print(f'Total training time: {train_time:.3f} seconds')
+    print(f'Total testing time: {test_time:.3f} seconds')
 
     print('Processing complete!')
     print(f'Total items trained on: {len(data)}')

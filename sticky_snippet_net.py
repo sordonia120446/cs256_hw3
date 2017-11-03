@@ -164,7 +164,6 @@ def main(args):
         every_n_iter=1000
     )
 
-    # TODO Train model
     features = np.asarray([d['x'] for d in data])
     labels = np.asarray([d['y'] for d in data], dtype=np.float32)
 
@@ -180,7 +179,16 @@ def main(args):
         steps=20000,
         hooks=[logging_hook]
     )
+
     # TODO Eval model
+    eval_input_fn = tf.estimator.inputs.numpy_input_fn(
+        x={"x": features},
+        y=labels,
+        num_epochs=1,
+        shuffle=False
+    )
+    eval_results = sticky_classifier.evaluate(input_fn=eval_input_fn)
+    print(eval_results)
 
     print('Processing complete!')
     print(f'Total items trained on: {len(data)}')

@@ -35,7 +35,7 @@ python sticky_snippet_generator.py 20000 0 5 ./data3/out4.txt --label
 python sticky_snippet_generator.py 20000 0 7 ./data3/out5.txt --label
 python sticky_snippet_generator.py 20000 0 20 ./data3/out6.txt --label
 
-python sticky_snippet_generator.py 60000 0 0 ./data4/out1.txt
+python sticky_snippet_generator.py 60000 0 0 ./data4/out1.txt --label
 
 # Generate test data
 

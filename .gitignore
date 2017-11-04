@@ -47,7 +47,7 @@ env.sh
 
 # Homework-specific #
 # #################
-data/
-test/
+data*/
+test*/
 model/
 

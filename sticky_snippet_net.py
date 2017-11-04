@@ -177,7 +177,16 @@ def train_mode(data):
         hooks=[logging_hook]
     )
 
-    # TODO Eval model
+
+def test_mode(data):
+    # Init estimator
+    model_dir = os.path.join('model')
+    sticky_classifier = tf.estimator.Estimator(
+        model_fn=dnn_model_fn,
+        model_dir=model_dir
+    )
+    features = np.asarray([d['x'] for d in data])
+    labels = np.asarray([d['y'] for d in data], dtype=np.float32)
     eval_input_fn = tf.estimator.inputs.numpy_input_fn(
         x={"x": features},
         y=labels,
@@ -186,9 +195,6 @@ def train_mode(data):
     )
     eval_results = sticky_classifier.evaluate(input_fn=eval_input_fn)
     print(eval_results)
-
-    print('Processing complete!')
-    print(f'Total items trained on: {len(data)}')
 
 
 def k_fold_mode(args, k=5):
@@ -210,20 +216,48 @@ def k_fold_mode(args, k=5):
         train_mode(training_set)
 
         # test on subsets[i]
-        # train_mode(subsets[i])
-        pass
+        test_set = subsets[i]
+        test_mode(test_set)
 
 
 def main(args):
     # call function based on mode
+    data = load_data(args.data_folder)
     if args.mode == 'train':
-        # Load training data
-        data = load_data(args.data_folder)
         train_mode(data)
+        print('Processing complete!')
+        print(f'Total items trained on: {len(data)}')
+    elif args.mode == 'test':
+        test_mode(data)
+        print('Processing complete!')
+        print(f'Total items tested on: {len(data)}')
     elif args.mode == '5fold':
-        k_fold_mode(args)
-    elif args.mode == 'train':
-        pass
+        k = 5
+        subset_size = int(len(data) / k)
+        subsets = [data[i:i + subset_size] for i in range(0, len(data), subset_size)]
+
+        # if size of data isn't divisible by 5, have a larger kth subset
+        if len(data) % k != 0:
+            subsets[k - 1] = subsets[k - 1] + subsets[k]
+            del subsets[k]
+
+        # perform cross validation
+        for i in range(k):
+            # exclude subset i for training data
+            training_set = list(subsets)
+            del training_set[i]
+            # train on training_set
+            train_mode(training_set)
+            # test on subset i
+            test_set = subsets[i]
+            test_mode(test_set)
+            print('Processing complete!')
+            print(f'Total items trained on: {len(training_set)}')
+            print(f'Total items trained on: {len(test_set)}')
+    else:
+        # debugging
+        train_mode(load_data(args.data_folder))
+        test_mode(load_data(args.data_folder))
 
 
 """CLARGS"""

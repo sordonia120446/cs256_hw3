@@ -36,8 +36,7 @@ def generate_strings(args, str_len=40):
 
     if strings:
         # Write to file
-        f_out_path = os.path.join('data', args.output_file)
-        with open(f_out_path, 'w') as f:
+        with open(args.output_file, 'w') as f:
             for str in strings:
                 f.write(str + ',' + get_stickiness(str) + '\n') # Needs labels
 

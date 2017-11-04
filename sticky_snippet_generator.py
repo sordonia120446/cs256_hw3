@@ -5,7 +5,6 @@ Gene Snippet Detection with Tensorflow
 """
 
 import argparse
-import os
 import random
 
 def generate_strings(args, str_len=40):
@@ -37,8 +36,12 @@ def generate_strings(args, str_len=40):
     if strings:
         # Write to file
         with open(args.output_file, 'w') as f:
-            for str in strings:
-                f.write(str + ',' + get_stickiness(str) + '\n') # Needs labels
+            for string in strings:
+                label = ''
+                if args.label:
+                    label = ',' + get_stickiness(string)
+                f.write(string + label + '\n')  # Needs labels
+
 
 def generate_palindrome(str_len, alphabet=['A', 'B', 'C', 'D'], sticks_to={'A': 'C', 'B': 'D', 'C': 'A', 'D': 'B'}):
     '''
@@ -161,6 +164,12 @@ parser.add_argument(
     'output_file',
     action='store',
     help='Name of output file'
+)
+
+parser.add_argument(
+    '--label',
+    action='store_true',
+    help='Add label to training data'
 )
 
 

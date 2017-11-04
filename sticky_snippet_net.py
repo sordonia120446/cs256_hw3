@@ -14,6 +14,7 @@ Build a classifier for "alien DNA."  They have six possible labels:
 import argparse
 import glob
 import os
+import time
 
 import numpy as np
 import tensorflow as tf
@@ -22,14 +23,15 @@ import tensorflow as tf
 tf.logging.set_verbosity(tf.logging.INFO)
 
 label_map = {
-    'NONSTICK': 1,
-    '12-STICKY': 2,
-    '34-STICKY': 3,
-    '56-STICKY': 4,
-    '78-STICKY': 5,
-    'STICK_PALINDROME': 6
+    'NONSTICK': 0,
+    '12-STICKY': 1,
+    '34-STICKY': 2,
+    '56-STICKY': 3,
+    '78-STICKY': 4,
+    'STICK_PALINDROME': 5
 }
 
+MINIBATCH_SIZE = 100
 
 def convert_data(input_line):
     """
@@ -82,6 +84,29 @@ def load_data(data_folder):
 
     return data
 
+def get_confusion_matrix(labels, predictions):
+    '''
+    Generate a confusion matrix for evaluation.
+
+    Note for rows, columns 0...5 0=NONSTICK, 1=12-STICKY...up to 5=STICK_PALINDROME
+
+    :param labels: A tensor containing actual labels for each example
+    :param predictions: A tensor containing the label predicted by the model
+    :return: Tuple containing matrix and update op for use in eval_metric_ops
+    '''
+    with tf.variable_scope('get_confusion_matrix'):
+        matrix = tf.confusion_matrix(labels=labels, predictions=predictions, num_classes=6)
+        matrix_sum = tf.Variable(tf.zeros(shape=(6,6), dtype=tf.int32),
+                                 trainable=False,
+                                 name='confusion_matrix',
+                                 collections=[tf.GraphKeys.LOCAL_VARIABLES])
+
+        # Update matrix_sum by adding matrix to it
+        update = tf.assign_add(matrix_sum, matrix)
+
+        # Return confusion matrix and update op
+        return tf.convert_to_tensor(matrix_sum), update
+
 
 def dnn_model_fn(features, labels, mode):
     """
@@ -133,7 +158,8 @@ def dnn_model_fn(features, labels, mode):
         "accuracy": tf.metrics.accuracy(
             labels=labels,
             predictions=predictions["classes"]
-        )
+        ),
+        "confusion_matrix": get_confusion_matrix(labels, predictions["classes"])
     }
 
     return tf.estimator.EstimatorSpec(
@@ -163,14 +189,15 @@ def main(args):
         every_n_iter=1000
     )
 
-    # TODO Train model
+    train_start = time.perf_counter()
+
     features = np.asarray([d['x'] for d in data])
     labels = np.asarray([d['y'] for d in data], dtype=np.float32)
 
     train_input_fn = tf.estimator.inputs.numpy_input_fn(
         x={'x': features},
         y=labels,
-        batch_size=100,
+        batch_size=MINIBATCH_SIZE,
         num_epochs=None,
         shuffle=True
     )
@@ -179,7 +206,24 @@ def main(args):
         steps=20000,
         hooks=[logging_hook]
     )
+
+    train_time = time.perf_counter() - train_start
+    test_start = time.perf_counter()
+
     # TODO Eval model
+    eval_input_fn = tf.estimator.inputs.numpy_input_fn(
+        x={"x": features},
+        y=labels,
+        num_epochs=1,
+        shuffle=False
+    )
+    eval_results = sticky_classifier.evaluate(input_fn=eval_input_fn)
+
+    test_time = time.perf_counter() - test_start
+    print(eval_results)
+
+    print(f'Total training time: {train_time:.3f} seconds')
+    print(f'Total testing time: {test_time:.3f} seconds')
 
     print('Processing complete!')
     print(f'Total items trained on: {len(data)}')

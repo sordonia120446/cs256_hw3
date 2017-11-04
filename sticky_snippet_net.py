@@ -60,7 +60,7 @@ def convert_data(input_line):
     return np.array(data, dtype=np.float32), label
 
 
-def load_data(data_folder, exclude=None):
+def load_data(data_folder):
     """
     Iterate through each file in data_folder and construct
     the input data features (40-len DNA).
@@ -73,7 +73,7 @@ def load_data(data_folder, exclude=None):
     data_files = os.path.join(data_folder, '*.txt')
     data = []
     for f_path in glob.glob(data_files):
-        # TO DO EXCLUDE K
+
         with open(f_path) as f_in:
             for line in f_in.read().splitlines():
                 dna_arr, label = convert_data(line)
@@ -192,11 +192,25 @@ def train_mode(data):
 
 
 def k_fold_mode(args, k=5):
-    for subset in range(k):
-        data = load_data(args.data_folder, k)
-        # trains on excluding k
-        train_mode(data, k)
-        # test on k
+    data = load_data(args.data_folder)
+    subset_size = int(len(data) / k)
+    subsets = [data[i:i + subset_size] for i in range(0, len(data), subset_size)]
+
+    # if size of data isn't divisible by 5, have a larger kth subset
+    if len(data) % k != 0:
+        subsets[k-1] = subsets[k-1] + subsets[k]
+        del subsets[k]
+
+    # perform cross validation
+    for i in range(k):
+        # create copy and then remove subset i
+        training_set = list(subsets)
+        del training_set[i]
+        # train on training_set
+        train_mode(training_set)
+
+        # test on subsets[i]
+        # train_mode(subsets[i])
         pass
 
 

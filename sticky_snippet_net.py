@@ -172,9 +172,9 @@ def dnn_model_fn(features, labels, mode):
     )
 
 
-def train_mode(data):
+def train_mode(data, model_name):
     # Init estimator
-    model_dir = os.path.join('model')
+    model_dir = os.path.join(model_name)
     sticky_classifier = tf.estimator.Estimator(
         model_fn=dnn_model_fn,
         model_dir=model_dir
@@ -198,16 +198,20 @@ def train_mode(data):
         num_epochs=None,
         shuffle=True
     )
+
+    start = time.perf_counter()
     sticky_classifier.train(
         input_fn=train_input_fn,
         steps=20000,
         hooks=[logging_hook]
     )
+    train_time = time.perf_counter() - start
+    print(f'Trained for {train_time:.3f} seconds')
 
 
-def test_mode(data):
+def test_mode(data, model_name):
     # Init estimator
-    model_dir = os.path.join('model')
+    model_dir = os.path.join(model_name)
     sticky_classifier = tf.estimator.Estimator(
         model_fn=dnn_model_fn,
         model_dir=model_dir
@@ -221,20 +225,24 @@ def test_mode(data):
         num_epochs=1,
         shuffle=False
     )
+
+    start = time.perf_counter()
     eval_results = sticky_classifier.evaluate(input_fn=eval_input_fn)
-    print(eval_results)
+    test_time = time.perf_counter() - start
+    print(f'Tested for {test_time:.3f} seconds')
     return eval_results['accuracy']
 
 
 def main(args):
     # call function based on mode
     data = load_data(args.data_folder)
+    model_name = args.model_file
     if args.mode == 'train':
-        train_mode(data)
+        train_mode(data, model_name)
         print('Processing complete!')
         print(f'Total items trained on: {len(data)}')
     elif args.mode == 'test':
-        test_mode(data)
+        test_mode(data, model_name)
         print('Processing complete!')
         print(f'Total items tested on: {len(data)}')
     elif args.mode == '5fold':
@@ -255,10 +263,10 @@ def main(args):
             for subset in subsets_copy:
                 training_set += subset
             # train on training_set
-            train_mode(training_set)
+            train_mode(training_set, model_name)
             # test on subset i
             test_set = subsets[i]
-            accuracy += test_mode(test_set)
+            accuracy += test_mode(test_set, model_name)
             print('Processing complete!')
             print(f'Total items trained on: {len(training_set)}')
             print(f'Total items trained on: {len(test_set)}')
@@ -266,7 +274,7 @@ def main(args):
     else:
         # debugging
         # Init estimator
-        model_dir = os.path.join('model')
+        model_dir = os.path.join(model_name)
         sticky_classifier = tf.estimator.Estimator(
             model_fn=dnn_model_fn,
             model_dir=model_dir

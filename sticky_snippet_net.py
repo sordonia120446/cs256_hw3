@@ -223,29 +223,7 @@ def test_mode(data):
     )
     eval_results = sticky_classifier.evaluate(input_fn=eval_input_fn)
     print(eval_results)
-
-
-def k_fold_mode(args, k=5):
-    data = load_data(args.data_folder)
-    subset_size = int(len(data) / k)
-    subsets = [data[i:i + subset_size] for i in range(0, len(data), subset_size)]
-
-    # if size of data isn't divisible by 5, have a larger kth subset
-    if len(data) % k != 0:
-        subsets[k-1] = subsets[k-1] + subsets[k]
-        del subsets[k]
-
-    # perform cross validation
-    for i in range(k):
-        # create copy and then remove subset i
-        training_set = list(subsets)
-        del training_set[i]
-        # train on training_set
-        train_mode(training_set)
-
-        # test on subsets[i]
-        test_set = subsets[i]
-        test_mode(test_set)
+    return eval_results['accuracy']
 
 
 def main(args):
@@ -263,29 +241,70 @@ def main(args):
         k = 5
         subset_size = int(len(data) / k)
         subsets = [data[i:i + subset_size] for i in range(0, len(data), subset_size)]
-
         # if size of data isn't divisible by 5, have a larger kth subset
         if len(data) % k != 0:
             subsets[k - 1] = subsets[k - 1] + subsets[k]
             del subsets[k]
-
+        accuracy = 0
         # perform cross validation
         for i in range(k):
             # exclude subset i for training data
-            training_set = list(subsets)
-            del training_set[i]
+            subsets_copy = list(subsets)
+            del subsets_copy[i]
+            training_set = []
+            for subset in subsets_copy:
+                training_set += subset
             # train on training_set
             train_mode(training_set)
             # test on subset i
             test_set = subsets[i]
-            test_mode(test_set)
+            accuracy += test_mode(test_set)
             print('Processing complete!')
             print(f'Total items trained on: {len(training_set)}')
             print(f'Total items trained on: {len(test_set)}')
+        print('Average 5fold accuracy: ', str(accuracy / 5.0))
     else:
         # debugging
-        train_mode(load_data(args.data_folder))
-        test_mode(load_data(args.data_folder))
+        # Init estimator
+        model_dir = os.path.join('model')
+        sticky_classifier = tf.estimator.Estimator(
+            model_fn=dnn_model_fn,
+            model_dir=model_dir
+        )
+
+        # Set up logging for predictions
+        # Log the values in the "Softmax" tensor with label "probabilities"
+        tensors_to_log = {"probabilities": "softmax_tensor"}
+        logging_hook = tf.train.LoggingTensorHook(
+            tensors=tensors_to_log,
+            every_n_iter=1000
+        )
+
+        features = np.asarray([d['x'] for d in data])
+        labels = np.asarray([d['y'] for d in data], dtype=np.float32)
+
+        train_input_fn = tf.estimator.inputs.numpy_input_fn(
+            x={'x': features},
+            y=labels,
+            batch_size=MINIBATCH_SIZE,
+            num_epochs=None,
+            shuffle=True
+        )
+        sticky_classifier.train(
+            input_fn=train_input_fn,
+            steps=20000,
+            hooks=[logging_hook]
+        )
+
+        # eval
+        eval_input_fn = tf.estimator.inputs.numpy_input_fn(
+            x={"x": features},
+            y=labels,
+            num_epochs=1,
+            shuffle=False
+        )
+        eval_results = sticky_classifier.evaluate(input_fn=eval_input_fn)
+        print(eval_results)
 
 
 """CLARGS"""
